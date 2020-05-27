@@ -1,0 +1,39 @@
+import datetime
+import pandas as pd
+alist = []
+ww = []
+result =pd.DataFrame(columns=(['gmtTime', 'srcAddrOrg', 'car_id', 'lng', 'lat', 'isArriveOrLeft','stationSeqNum', 'gmtTime1']))
+df = pd.read_csv('E:\Desktop\筛选数据\ic.csv')
+dd = pd.read_csv('E:/Desktop/筛选数据/gps-筛选.csv')
+mm = pd.DataFrame(df['time'])
+mm['time1'] = df['time'].shift(1)
+dd['gmtTime'] = pd.to_datetime(dd['gmtTime'])
+dd['gmtTime1'] = dd['gmtTime'].shift(1)
+#求出ic表中的time相邻间隔存到alist列表中
+for i in range(df.shape[0]):
+    x = pd.to_datetime(mm.loc[i,'time'])
+    y = pd.to_datetime(mm.loc[i,'time1'])
+    xx = x - y
+    alist.append(xx)
+# a = 5 min
+time_str = datetime.timedelta(days=0, seconds=0, microseconds=0, milliseconds=0, minutes=5, hours=0, weeks=0)
+time_str1 = datetime.timedelta(days=0, seconds=0, microseconds=0, milliseconds=0, minutes=0, hours=0, weeks=0)
+#得到time间隔小于q的ic表的index列表存到ww列表
+for q in alist:
+    if q > time_str:
+        c = alist.index(q)
+        print('{}站台为空'.format(dd.loc[c,'stationSeqNum']))  
+    elif q < time_str and q > time_str1:
+        ww.append(alist.index(q))
+#将时间间隔存到dataframe中
+for k in range(len(ww)):
+    i = ww[k]
+    result.loc[k] = dd.loc[ww.index(i)]
+    result['timedelta'] = dd['gmtTime'] - dd['gmtTime1'] 
+print(result.shape[0])
+result.set_index(['car_id'], inplace=True)
+result1 = result.dropna(axis=0, how='any', thresh=None, subset=None, inplace=False)
+result1.to_csv('data.csv')
+#SELECT car_id,COUNT(car_id),min(timedelta) from gps1 GROUP BY car_id;
+#select d.* from data_last as d inner join choose_data as c on d.car_id = c.car_id where c.`min(timedelta)`=d.timedelta ORDER BY d.timedelta asc;
+#select d.*,b.* from data_last1 as d inner join bus_station as b on b.gps_seq_no = d.stationSeqNum;
